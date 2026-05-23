@@ -52,13 +52,20 @@ codex login
 
 ## アンインストール
 
-```powershell
-# 自動起動の登録を削除
-reg delete "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v TokenChecker /f
+PowerShell で以下を順に実行する（対象が無くてもエラーにならない）。
 
-# 設定ファイルを削除
-Remove-Item "$env:APPDATA\TokenChecker" -Recurse -Force
+```powershell
+# 1. アプリを終了（起動中だとファイルがロックされ削除に失敗するため）
+Stop-Process -Name TokenChecker -Force -ErrorAction SilentlyContinue
+
+# 2. 自動起動の登録を削除（登録が無い場合はスキップ）
+reg delete "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v TokenChecker /f 2>$null
+
+# 3. 設定・キャッシュを削除（フォルダが無い場合はスキップ）
+Remove-Item "$env:APPDATA\TokenChecker" -Recurse -Force -ErrorAction SilentlyContinue
 ```
+
+あとはビルド／ダウンロードした `TokenChecker.exe`（やクローンしたフォルダ）を削除すれば完了。Claude / Codex の認証情報は CLI 側（`claude` / `codex`）の管理なので、本アプリのアンインストールでは消さない。
 
 ## 免責事項
 
