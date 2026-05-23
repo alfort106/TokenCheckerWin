@@ -20,10 +20,15 @@ public partial class TaskbarWidget : Window
     private static extern bool SetWindowPos(
         IntPtr hWnd, IntPtr hWndInsertAfter, int x, int y, int cx, int cy, uint flags);
 
+    [DllImport("user32.dll")]
+    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
     private static readonly IntPtr HWND_TOPMOST = new(-1);
     private const uint SWP_NOSIZE     = 0x0001;
     private const uint SWP_NOMOVE     = 0x0002;
     private const uint SWP_NOACTIVATE = 0x0010;
+    private const int  SW_HIDE        = 0;
+    private const int  SW_SHOWNA      = 8;
 
     private readonly UsageViewModel _vm;
     private DispatcherTimer?        _topmostTimer;
@@ -51,10 +56,22 @@ public partial class TaskbarWidget : Window
         // クリック時の再描画でコンテンツが消える競合が起きるため。
         SnapToTaskbar(_screenIndex, _vm.WidgetPlacement);
 
+        // 全仮想デスクトップに固定（SetPropW が有効な環境ではポーリング不要になる）
+        var initialHwnd = new WindowInteropHelper(this).Handle;
+        VirtualDesktopHelper.PinToAllDesktops(initialHwnd);
+
         // タスクバーが前面に来てウィジェットを覆うため、定期的に最前面を再設定する。
+        // 仮想デスクトップの切り替えも検知し、現在のデスクトップへ追従する。
         _topmostTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
         _topmostTimer.Tick += (_, _) =>
         {
+            var hwnd = new WindowInteropHelper(this).Handle;
+            if (!VirtualDesktopHelper.IsOnCurrentDesktop(hwnd))
+            {
+                // 仮想デスクトップが切り替わった → 現在のデスクトップへ移動して再表示
+                VirtualDesktopHelper.MoveToCurrentDesktop(hwnd);
+                ShowWindow(hwnd, SW_SHOWNA);
+            }
             ReassertTopmost();
             if (++_positionTick % 5 == 0)
                 PositionOnSelectedTaskbar(_vm.WidgetPlacement);

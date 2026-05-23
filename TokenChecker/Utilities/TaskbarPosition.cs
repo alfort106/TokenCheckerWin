@@ -40,6 +40,10 @@ public static class TaskbarPosition
 
         if (!GetWindowRect(taskbar, out var tb)) return null;
 
+        // タスクバーが自動非表示のとき幅か高さが 4px 以下になる。
+        // この場合は null を返して PositionAtScreenEdge フォールバックを使わせる。
+        if (tb.Bottom - tb.Top <= 4 || tb.Right - tb.Left <= 4) return null;
+
         // 通知領域 (TrayNotifyWnd) の左端を取得 → ウィジェットをその左に置く
         var notify = FindWindowEx(taskbar, IntPtr.Zero, "TrayNotifyWnd", null);
         int notifyLeft = tb.Right;                 // 見つからない場合は右端で代用
