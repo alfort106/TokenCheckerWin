@@ -55,6 +55,8 @@ public sealed class CodexUsageProvider : IUsageProvider, IAsyncDisposable
         _consecutiveFailures = 0;
         _nextAttemptUtc = DateTime.MinValue;
         _lastError = null;
+        // 認証切れ後に再ログインした場合、古いプロセスを停止して新トークンで再起動させる。
+        _client.Stop();
     }
 
     private async Task<ServiceUsage> FetchOnceAsync(CancellationToken ct)
