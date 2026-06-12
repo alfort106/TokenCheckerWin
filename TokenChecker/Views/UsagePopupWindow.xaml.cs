@@ -25,7 +25,8 @@ public partial class UsagePopupWindow : Window
         SetupIntervalPicker();
         SetupTransparencyPicker();
         StartupChk.IsChecked = vm.StartupEnabled;
-        vm.PropertyChanged  += (_, _) => Dispatcher.Invoke(Refresh);
+        IsVisibleChanged    += (_, _) => { if (IsVisible) Refresh(); };
+        vm.PropertyChanged  += (_, _) => Dispatcher.Invoke(() => { if (IsVisible) Refresh(); });
 
         Refresh();
     }

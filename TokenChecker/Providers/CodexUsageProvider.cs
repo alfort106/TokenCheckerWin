@@ -61,17 +61,25 @@ public sealed class CodexUsageProvider : IUsageProvider, IAsyncDisposable
 
     private async Task<ServiceUsage> FetchOnceAsync(CancellationToken ct)
     {
+        // 取得完了後は必ずプロセスを終了してメモリを解放する。
         try
         {
             await _client.StartAsync(ct);
-            return Map(await _client.ReadRateLimitsAsync(ct));
+            try
+            {
+                return Map(await _client.ReadRateLimitsAsync(ct));
+            }
+            catch (DomainError e) when (e.Kind == DomainErrorKind.CodexProcessExited)
+            {
+                // プロセスが落ちていたら一度だけ再起動して再試行
+                _client.Stop();
+                await _client.StartAsync(ct);
+                return Map(await _client.ReadRateLimitsAsync(ct));
+            }
         }
-        catch (DomainError e) when (e.Kind == DomainErrorKind.CodexProcessExited)
+        finally
         {
-            // プロセスが落ちていたら一度だけ再起動して再試行
             _client.Stop();
-            await _client.StartAsync(ct);
-            return Map(await _client.ReadRateLimitsAsync(ct));
         }
     }
 

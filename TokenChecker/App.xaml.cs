@@ -20,6 +20,8 @@ public partial class App : System.Windows.Application
     private Mutex?                   _singleInstanceMutex;
     private DateTime                 _popupHiddenAt;
     private int                      _targetScreenIndex;
+    private double?                  _prevClaudeUtil;
+    private double?                  _prevCodexUtil;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -255,13 +257,17 @@ public partial class App : System.Windows.Application
             var claudeUtil = snap.ClaudeUsage?.FiveHour?.Utilization ?? snap.ClaudeUsage?.Weekly?.Utilization;
             var codexUtil  = snap.CodexUsage?.FiveHour?.Utilization  ?? snap.CodexUsage?.Weekly?.Utilization;
 
-            var newIcon = TrayIconRenderer.CreateIcon(claudeUtil, codexUtil);
-            var old = _prevIcon;
-            _tray!.Icon = newIcon;
-            _prevIcon = newIcon;
-            old?.Dispose();
-
-            _tray.Text = BuildTooltip();
+            if (claudeUtil != _prevClaudeUtil || codexUtil != _prevCodexUtil)
+            {
+                _prevClaudeUtil = claudeUtil;
+                _prevCodexUtil  = codexUtil;
+                var newIcon = TrayIconRenderer.CreateIcon(claudeUtil, codexUtil);
+                var old     = _prevIcon;
+                _tray!.Icon = newIcon;
+                _prevIcon   = newIcon;
+                old?.Dispose();
+            }
+            _tray!.Text = BuildTooltip();
         });
     }
 
