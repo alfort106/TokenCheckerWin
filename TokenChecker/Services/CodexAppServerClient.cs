@@ -58,6 +58,8 @@ public sealed class CodexAppServerClient : IAsyncDisposable
             if (_started)
             {
                 _readCts?.Cancel();
+                _readCts?.Dispose();
+                _readCts = null;
                 _stdin?.Dispose();
                 _stdin = null;
                 try { _process?.Dispose(); } catch { }
@@ -126,6 +128,8 @@ public sealed class CodexAppServerClient : IAsyncDisposable
         // 後続世代の pending を巻き込んで失敗させないようにする。
         Interlocked.Increment(ref _generation);
         _readCts?.Cancel();
+        _readCts?.Dispose();
+        _readCts  = null;
         try { if (_process?.HasExited == false) _process.Kill(entireProcessTree: true); } catch { }
         _process?.Dispose();
         _process  = null;

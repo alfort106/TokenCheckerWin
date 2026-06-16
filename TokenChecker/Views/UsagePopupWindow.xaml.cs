@@ -270,10 +270,19 @@ public partial class UsagePopupWindow : Window
 
     // ── Helpers ──────────────────────────────────────────────────────────
 
-    private static SolidColorBrush UtilBrush(double v) => new(
-        v < 0.75 ? MediaColor.FromRgb(0x4C, 0xAF, 0x50) :
-        v < 0.90 ? MediaColor.FromRgb(0xFF, 0xC1, 0x07) :
-                   MediaColor.FromRgb(0xF4, 0x43, 0x36));
+    private static readonly SolidColorBrush BrushGreen  = FrozenBrush(0x4C, 0xAF, 0x50);
+    private static readonly SolidColorBrush BrushYellow = FrozenBrush(0xFF, 0xC1, 0x07);
+    private static readonly SolidColorBrush BrushRed    = FrozenBrush(0xF4, 0x43, 0x36);
+
+    private static SolidColorBrush FrozenBrush(byte r, byte g, byte b)
+    {
+        var brush = new SolidColorBrush(MediaColor.FromRgb(r, g, b));
+        brush.Freeze();
+        return brush;
+    }
+
+    private static SolidColorBrush UtilBrush(double v)
+        => v < 0.75 ? BrushGreen : v < 0.90 ? BrushYellow : BrushRed;
 
     private static string ResetLabel(DateTime resetsAt)
     {

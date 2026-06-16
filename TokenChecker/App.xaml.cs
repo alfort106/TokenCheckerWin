@@ -22,6 +22,9 @@ public partial class App : System.Windows.Application
     private int                      _targetScreenIndex;
     private double?                  _prevClaudeUtil;
     private double?                  _prevCodexUtil;
+    private DomainErrorKind?         _prevClaudeErrorKind;
+    private DomainErrorKind?         _prevCodexErrorKind;
+    private bool                     _authNotifyReady;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -268,7 +271,48 @@ public partial class App : System.Windows.Application
                 old?.Dispose();
             }
             _tray!.Text = BuildTooltip();
+            NotifyAuthErrorIfNew(snap);
         });
+    }
+
+    private void NotifyAuthErrorIfNew(UsageSnapshot snap)
+    {
+        var newClaudeKind = snap.ClaudeError?.Kind;
+        var newCodexKind  = snap.CodexError?.Kind;
+
+        if (!_authNotifyReady)
+        {
+            // 起動直後の初回スナップショットは PromptLoginIfNeeded に任せる。
+            _authNotifyReady     = true;
+            _prevClaudeErrorKind = newClaudeKind;
+            _prevCodexErrorKind  = newCodexKind;
+            return;
+        }
+
+        var claudeAuthNow  = newClaudeKind is DomainErrorKind.TokenMissing or DomainErrorKind.AnthropicUnauthorized;
+        var codexAuthNow   = newCodexKind  is DomainErrorKind.CodexUnauthorized;
+        var claudeAuthPrev = _prevClaudeErrorKind is DomainErrorKind.TokenMissing or DomainErrorKind.AnthropicUnauthorized;
+        var codexAuthPrev  = _prevCodexErrorKind  is DomainErrorKind.CodexUnauthorized;
+
+        if ((claudeAuthNow && !claudeAuthPrev) || (codexAuthNow && !codexAuthPrev))
+        {
+            var msg = (claudeAuthNow, codexAuthNow) switch
+            {
+                (true, true)  => "Claude と Codex の認証が切れています。",
+                (true, false) => "Claude の認証が切れています。",
+                _             => "Codex の認証が切れています。",
+            };
+            _tray?.ShowBalloonTip(6000, "Token Checker - 再ログインが必要です",
+                msg + "\nログインウィンドウが開きます。", ToolTipIcon.Warning);
+
+            if (claudeAuthNow && !claudeAuthPrev)
+                new LoginWindow("Claude Code", "claude auth login", _vm!, new WindowsTokenSource()).Show();
+            if (codexAuthNow && !codexAuthPrev)
+                new LoginWindow("Codex", "codex login", _vm!).Show();
+        }
+
+        _prevClaudeErrorKind = newClaudeKind;
+        _prevCodexErrorKind  = newCodexKind;
     }
 
     private string BuildTooltip()

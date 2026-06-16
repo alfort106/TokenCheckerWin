@@ -207,13 +207,23 @@ public partial class TaskbarWidget : Window
         return mode;
     }
 
-    private static System.Windows.Media.SolidColorBrush UtilBrush(double? v)
+    private static readonly System.Windows.Media.SolidColorBrush BrushGray   = Frozen(0x90, 0x90, 0x90);
+    private static readonly System.Windows.Media.SolidColorBrush BrushGreen  = Frozen(0x4C, 0xAF, 0x50);
+    private static readonly System.Windows.Media.SolidColorBrush BrushYellow = Frozen(0xFF, 0xC1, 0x07);
+    private static readonly System.Windows.Media.SolidColorBrush BrushRed    = Frozen(0xF4, 0x43, 0x36);
+
+    private static System.Windows.Media.SolidColorBrush Frozen(byte r, byte g, byte b)
     {
-        if (v == null) return new(MediaColor.FromRgb(0x90, 0x90, 0x90));
-        return new(v < 0.75 ? MediaColor.FromRgb(0x4C, 0xAF, 0x50)
-                 : v < 0.90 ? MediaColor.FromRgb(0xFF, 0xC1, 0x07)
-                             : MediaColor.FromRgb(0xF4, 0x43, 0x36));
+        var b2 = new System.Windows.Media.SolidColorBrush(MediaColor.FromRgb(r, g, b));
+        b2.Freeze();
+        return b2;
     }
+
+    private static System.Windows.Media.SolidColorBrush UtilBrush(double? v)
+        => v == null ? BrushGray
+         : v < 0.75  ? BrushGreen
+         : v < 0.90  ? BrushYellow
+         : BrushRed;
 
     // ── クリックで詳細ポップアップを開閉 ─────────────────────────────────
 
