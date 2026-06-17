@@ -35,6 +35,9 @@ public partial class LoginWindow : Window
         {
             WindowEffects.Apply(this);
             await SnapshotCurrentTokenAsync();
+            DoneBtn.IsEnabled = true;
+            if (_tokenSource != null)
+                _ = PollForNewTokenAsync();
         };
     }
 
@@ -127,6 +130,7 @@ public partial class LoginWindow : Window
 
     private async Task PollForNewTokenAsync()
     {
+        _pollCts?.Cancel();
         _pollCts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
         var ct = _pollCts.Token;
 
