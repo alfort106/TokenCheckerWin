@@ -37,8 +37,7 @@ public partial class UsagePopupWindow : Window
         Resources["SecondaryText"] = new SolidColorBrush(MediaColor.FromRgb(0x45, 0x45, 0x45));
         Resources["TertiaryText"]  = new SolidColorBrush(MediaColor.FromRgb(0x70, 0x70, 0x70));
         Resources["BorderBrush2"]  = new SolidColorBrush(MediaColor.FromArgb(0x35, 0x00, 0x00, 0x00));
-        Resources["SurfaceBrush"] = new SolidColorBrush(
-            MediaColor.FromArgb(_vm.PopupTransparency.ToAlpha(), 0xFF, 0xFF, 0xFF));
+        Resources["SurfaceBrush"] = new SolidColorBrush(MediaColor.FromRgb(0xFF, 0xFF, 0xFF));
 
         var hover = new SolidColorBrush(MediaColor.FromArgb(0x18, 0x00, 0x00, 0x00));
         Resources["HoverBg"] = hover;
@@ -209,20 +208,14 @@ public partial class UsagePopupWindow : Window
 
     private void SetupTransparencyPicker()
     {
+        if (TransparencyPicker.Parent is FrameworkElement row)
+            row.Visibility = Visibility.Collapsed;
         _transparencyPickerReady = false;
-        TransparencyPicker.ItemsSource = PopupTransparencyExtensions.All
-            .Select(p => new TransparencyItem(p)).ToList();
-        TransparencyPicker.DisplayMemberPath = "Label";
-        var items = (IList<TransparencyItem>?)TransparencyPicker.ItemsSource;
-        TransparencyPicker.SelectedItem = items?.FirstOrDefault(i => i.Value == _vm.PopupTransparency);
-        _transparencyPickerReady = true;
     }
 
     private void TransparencyPicker_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
-        if (!_transparencyPickerReady || TransparencyPicker.SelectedItem is not TransparencyItem item) return;
-        _vm.PopupTransparency = item.Value;
-        ApplySystemAppearance();
+        if (!_transparencyPickerReady) return;
     }
 
     private sealed record TransparencyItem(PopupTransparency Value)

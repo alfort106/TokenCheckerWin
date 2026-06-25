@@ -23,13 +23,49 @@ public partial class TaskbarWidget : Window
     [DllImport("user32.dll")]
     private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetForegroundWindow();
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetShellWindow();
+
+    [DllImport("user32.dll")]
+    private static extern bool IsWindowVisible(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+
+    [DllImport("user32.dll", EntryPoint = "GetWindowLong")]
+    private static extern int GetWindowLong32(IntPtr hWnd, int nIndex);
+
+    [DllImport("user32.dll", EntryPoint = "SetWindowLong")]
+    private static extern int SetWindowLong32(IntPtr hWnd, int nIndex, int dwNewLong);
+
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongPtr")]
+    private static extern IntPtr GetWindowLongPtr64(IntPtr hWnd, int nIndex);
+
+    [DllImport("user32.dll", EntryPoint = "SetWindowLongPtr")]
+    private static extern IntPtr SetWindowLongPtr64(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
+
     private static readonly IntPtr HWND_TOPMOST = new(-1);
     private const uint SWP_NOSIZE     = 0x0001;
     private const uint SWP_NOMOVE     = 0x0002;
     private const uint SWP_NOREDRAW   = 0x0008;
     private const uint SWP_NOACTIVATE = 0x0010;
+    private const int  GWL_EXSTYLE     = -20;
+    private const long WS_EX_APPWINDOW = 0x00040000L;
+    private const long WS_EX_TOOLWINDOW = 0x00000080L;
     private const int  SW_HIDE        = 0;
     private const int  SW_SHOWNA      = 8;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct RECT
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
 
     private readonly UsageViewModel _vm;
     private DispatcherTimer?        _topmostTimer;
@@ -45,6 +81,7 @@ public partial class TaskbarWidget : Window
         _vm = vm;
         _screenIndex = initialScreenIndex;
         InitializeComponent();
+        SourceInitialized += (_, _) => HideFromAltTab(new WindowInteropHelper(this).Handle);
         Loaded += OnLoaded;
         vm.SnapshotChanged += () => Dispatcher.Invoke(UpdateLabels);
         UpdateLabels();
@@ -59,6 +96,7 @@ public partial class TaskbarWidget : Window
 
         // 全仮想デスクトップに固定（SetPropW が有効な環境ではポーリング不要になる）
         var initialHwnd = new WindowInteropHelper(this).Handle;
+        HideFromAltTab(initialHwnd);
         VirtualDesktopHelper.PinToAllDesktops(initialHwnd);
 
         // タスクバーが前面に来てウィジェットを覆うため、定期的に最前面を再設定する。
@@ -72,6 +110,12 @@ public partial class TaskbarWidget : Window
                 // 仮想デスクトップが切り替わった → 現在のデスクトップへ移動して再表示
                 VirtualDesktopHelper.MoveToCurrentDesktop(hwnd);
             }
+            if (IsFullscreenAppOnSelectedScreen(hwnd))
+            {
+                ShowWindow(hwnd, SW_HIDE);
+                return;
+            }
+
             ShowWindow(hwnd, SW_SHOWNA);
             ReassertTopmost();
             if (++_positionTick % 5 == 0)
@@ -89,7 +133,58 @@ public partial class TaskbarWidget : Window
                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOREDRAW);
     }
 
+    private static void HideFromAltTab(IntPtr hwnd)
+    {
+        if (hwnd == IntPtr.Zero) return;
+
+        var exStyle = GetWindowLongPtr(hwnd, GWL_EXSTYLE).ToInt64();
+        exStyle &= ~WS_EX_APPWINDOW;
+        exStyle |= WS_EX_TOOLWINDOW;
+        SetWindowLongPtr(hwnd, GWL_EXSTYLE, new IntPtr(exStyle));
+    }
+
+    private static IntPtr GetWindowLongPtr(IntPtr hwnd, int index)
+        => IntPtr.Size == 8
+            ? GetWindowLongPtr64(hwnd, index)
+            : new IntPtr(GetWindowLong32(hwnd, index));
+
+    private static IntPtr SetWindowLongPtr(IntPtr hwnd, int index, IntPtr value)
+        => IntPtr.Size == 8
+            ? SetWindowLongPtr64(hwnd, index, value)
+            : new IntPtr(SetWindowLong32(hwnd, index, value.ToInt32()));
+
     // ── タスクバー隣接配置 ────────────────────────────────────────────────
+
+    private bool IsFullscreenAppOnSelectedScreen(IntPtr selfHwnd)
+    {
+        var foreground = GetForegroundWindow();
+        if (foreground == IntPtr.Zero ||
+            foreground == selfHwnd ||
+            foreground == GetShellWindow() ||
+            !IsWindowVisible(foreground))
+            return false;
+
+        var screens = System.Windows.Forms.Screen.AllScreens;
+        if (screens.Length == 0) return false;
+
+        var target = _screenIndex >= 0 && _screenIndex < screens.Length
+            ? screens[_screenIndex]
+            : screens[0];
+        var foregroundScreen = System.Windows.Forms.Screen.FromHandle(foreground);
+        if (!string.Equals(foregroundScreen.DeviceName, target.DeviceName, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        return GetWindowRect(foreground, out var rect) && CoversScreen(rect, target.Bounds);
+    }
+
+    private static bool CoversScreen(RECT rect, System.Drawing.Rectangle screenBounds)
+    {
+        const int tolerance = 2;
+        return rect.Left <= screenBounds.Left + tolerance &&
+               rect.Top <= screenBounds.Top + tolerance &&
+               rect.Right >= screenBounds.Right - tolerance &&
+               rect.Bottom >= screenBounds.Bottom - tolerance;
+    }
 
     public void SnapToTaskbar(int screenIndex, WidgetPlacement placement)
     {

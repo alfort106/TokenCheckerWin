@@ -11,105 +11,103 @@
         Background="Transparent"
         WindowStartupLocation="Manual">
 
-    <!--
-        タスクバーと同じ高さで隣接して表示。
-        AllowsTransparency=True で完全透明 → タスクバーに溶け込んで見える。
-    -->
     <Border x:Name="Root"
-            CornerRadius="6"
+            Background="Transparent"
             Cursor="Hand"
             MouseLeftButtonDown="Root_Click">
 
-        <!-- 普段は透明でタスクバーに溶け込み、マウスオーバー時のみ薄く強調 -->
-        <Border.Style>
-            <Style TargetType="Border">
-                <Setter Property="Background" Value="Transparent"/>
-                <Style.Triggers>
-                    <Trigger Property="IsMouseOver" Value="True">
-                        <Setter Property="Background" Value="#26FFFFFF"/>
-                    </Trigger>
-                </Style.Triggers>
-            </Style>
-        </Border.Style>
-
         <Grid>
-        <StackPanel x:Name="WideContent" Orientation="Horizontal"
-                    VerticalAlignment="Center"
-                    HorizontalAlignment="Center"
-                    Margin="6,0">
+            <Border Margin="2,4"
+                    CornerRadius="5"
+                    Background="#1AFFFFFF"
+                    BorderBrush="#20FFFFFF"
+                    BorderThickness="1"
+                    IsHitTestVisible="False">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Opacity" Value="0"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsMouseOver, ElementName=Root}" Value="True">
+                                <Setter Property="Opacity" Value="1"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+            </Border>
 
-            <!-- Claude -->
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <TextBlock Text="✦"
-                           Foreground="#D07A42"
-                           FontSize="13"
-                           VerticalAlignment="Center"
-                           Margin="0,0,4,0"/>
-                <TextBlock x:Name="ClaudeLabel"
-                           Text="--%"
-                           Foreground="#F0F0F0"
-                           FontSize="14"
-                           FontWeight="SemiBold"
-                           VerticalAlignment="Center"/>
+            <StackPanel x:Name="WideContent"
+                        Orientation="Horizontal"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center"
+                        Margin="6,0">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="&#x2726;"
+                               Foreground="#D07A42"
+                               FontSize="13"
+                               VerticalAlignment="Center"
+                               Margin="0,0,4,0"/>
+                    <TextBlock x:Name="ClaudeLabel"
+                               Text="--%"
+                               Foreground="#F0F0F0"
+                               FontSize="14"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <Rectangle Width="1"
+                           Height="16"
+                           Fill="#40FFFFFF"
+                           Margin="6,0"/>
+
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="&#x25B6;"
+                               Foreground="#7A8EE0"
+                               FontSize="11"
+                               VerticalAlignment="Center"
+                               Margin="0,0,4,0"/>
+                    <TextBlock x:Name="CodexLabel"
+                               Text="--%"
+                               Foreground="#F0F0F0"
+                               FontSize="14"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
             </StackPanel>
 
-            <!-- 区切り線 -->
-            <Rectangle Width="1" Height="16"
-                       Fill="#40FFFFFF"
-                       Margin="6,0"/>
-
-            <!-- Codex -->
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <TextBlock Text="▶"
-                           Foreground="#7A8EE0"
-                           FontSize="11"
-                           VerticalAlignment="Center"
-                           Margin="0,0,4,0"/>
-                <TextBlock x:Name="CodexLabel"
-                           Text="--%"
-                           Foreground="#F0F0F0"
-                           FontSize="14"
-                           FontWeight="SemiBold"
-                           VerticalAlignment="Center"/>
-            </StackPanel>
-
-        </StackPanel>
-
-        <StackPanel x:Name="CompactContent"
-                    Visibility="Collapsed"
-                    Orientation="Horizontal"
-                    VerticalAlignment="Center"
-                    HorizontalAlignment="Center"
-                    Margin="4,0">
-            <TextBlock Text="✦" Foreground="#D07A42" FontSize="10" Margin="0,0,2,0"/>
-            <TextBlock x:Name="CompactClaudeLabel"
-                       Text="--" Foreground="#F0F0F0"
-                       FontSize="12" FontWeight="SemiBold"/>
-            <Rectangle Width="1" Height="14" Fill="#40FFFFFF" Margin="3,0"/>
-            <TextBlock Text="▶" Foreground="#7A8EE0" FontSize="9" Margin="0,0,2,0"/>
-            <TextBlock x:Name="CompactCodexLabel"
-                       Text="--" Foreground="#F0F0F0"
-                       FontSize="12" FontWeight="SemiBold"/>
-        </StackPanel>
-
-        <StackPanel x:Name="VerticalContent"
-                    Visibility="Collapsed"
-                    VerticalAlignment="Center"
-                    HorizontalAlignment="Center">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                <TextBlock Text="&#x2726;" Foreground="#D07A42" FontSize="9" Margin="0,0,2,0"/>
-                <TextBlock x:Name="VerticalClaudeLabel"
+            <StackPanel x:Name="CompactContent"
+                        Visibility="Collapsed"
+                        Orientation="Horizontal"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center"
+                        Margin="4,0">
+                <TextBlock Text="&#x2726;" Foreground="#D07A42" FontSize="10" Margin="0,0,2,0"/>
+                <TextBlock x:Name="CompactClaudeLabel"
                            Text="--" Foreground="#F0F0F0"
-                           FontSize="11" FontWeight="SemiBold"/>
-            </StackPanel>
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                <TextBlock Text="&#x25B6;" Foreground="#7A8EE0" FontSize="8" Margin="0,0,2,0"/>
-                <TextBlock x:Name="VerticalCodexLabel"
+                           FontSize="12" FontWeight="SemiBold"/>
+                <Rectangle Width="1" Height="14" Fill="#40FFFFFF" Margin="3,0"/>
+                <TextBlock Text="&#x25B6;" Foreground="#7A8EE0" FontSize="9" Margin="0,0,2,0"/>
+                <TextBlock x:Name="CompactCodexLabel"
                            Text="--" Foreground="#F0F0F0"
-                           FontSize="11" FontWeight="SemiBold"/>
+                           FontSize="12" FontWeight="SemiBold"/>
             </StackPanel>
-        </StackPanel>
 
+            <StackPanel x:Name="VerticalContent"
+                        Visibility="Collapsed"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <TextBlock Text="&#x2726;" Foreground="#D07A42" FontSize="9" Margin="0,0,2,0"/>
+                    <TextBlock x:Name="VerticalClaudeLabel"
+                               Text="--" Foreground="#F0F0F0"
+                               FontSize="11" FontWeight="SemiBold"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <TextBlock Text="&#x25B6;" Foreground="#7A8EE0" FontSize="8" Margin="0,0,2,0"/>
+                    <TextBlock x:Name="VerticalCodexLabel"
+                               Text="--" Foreground="#F0F0F0"
+                               FontSize="11" FontWeight="SemiBold"/>
+                </StackPanel>
+            </StackPanel>
         </Grid>
     </Border>
 </Window>
