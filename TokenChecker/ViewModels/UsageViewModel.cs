@@ -23,7 +23,6 @@ public sealed class UsageViewModel : INotifyPropertyChanged, IAsyncDisposable
     private PopupTransparency _popupTransparency;
     private string? _monitorDeviceName;
     private bool _startupEnabled;
-    private bool _loginPrompted;
     private DateTime _claudeCooldownUntilUtc;
     private ServiceUsage? _lastClaudeUsage;
     private ServiceUsage? _lastCodexUsage;
@@ -100,18 +99,6 @@ public sealed class UsageViewModel : INotifyPropertyChanged, IAsyncDisposable
         }
     }
 
-    /// <summary>初回起動時のログイン自動案内を一度だけ出すためのフラグ。</summary>
-    public bool LoginPrompted
-    {
-        get => _loginPrompted;
-        set
-        {
-            if (_loginPrompted == value) return;
-            _loginPrompted = value;
-            SaveSettings();
-        }
-    }
-
     public DateTime? ClaudeNextRetryAt =>
         Snapshot.ClaudeError?.Kind == DomainErrorKind.AnthropicRateLimited &&
         _claudeCooldownUntilUtc > DateTime.UtcNow
@@ -130,7 +117,6 @@ public sealed class UsageViewModel : INotifyPropertyChanged, IAsyncDisposable
         _widgetPlacement = LoadWidgetPlacement();
         _popupTransparency = LoadPopupTransparency();
         _monitorDeviceName = LoadMonitorDeviceName();
-        _loginPrompted   = LoadLoginPrompted();
         _startupEnabled  = StartupManager.IsEnabled;
         _lastClaudeUsage = LoadClaudeUsageCache();
         _lastCodexUsage  = LoadCodexUsageCache();
@@ -358,20 +344,6 @@ public sealed class UsageViewModel : INotifyPropertyChanged, IAsyncDisposable
         return null;
     }
 
-    private static bool LoadLoginPrompted()
-    {
-        try
-        {
-            if (!File.Exists(SettingsPath)) return false;
-            var doc = JsonDocument.Parse(File.ReadAllText(SettingsPath));
-            if (doc.RootElement.TryGetProperty("loginPrompted", out var el) &&
-                el.ValueKind is JsonValueKind.True or JsonValueKind.False)
-                return el.GetBoolean();
-        }
-        catch { }
-        return false;
-    }
-
     private void SaveSettings()
     {
         try
@@ -384,7 +356,6 @@ public sealed class UsageViewModel : INotifyPropertyChanged, IAsyncDisposable
                     widgetPlacement = _widgetPlacement.ToString(),
                     popupTransparency = _popupTransparency.ToString(),
                     monitorDeviceName = _monitorDeviceName,
-                    loginPrompted = _loginPrompted,
                 }));
         }
         catch { }
